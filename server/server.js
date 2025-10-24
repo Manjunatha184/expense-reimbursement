@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const connectDB = require('./config/db');
 
-// Import routes
+// Routes
 const authRoutes = require('./routes/authRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
@@ -19,7 +19,7 @@ connectDB();
 
 const app = express();
 
-// CORS: allow local dev and production (comma-separated in CLIENT_ORIGIN)
+// CORS allowlist from CLIENT_ORIGIN (comma-separated, no trailing slashes)
 const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
   .split(',')
   .map(s => s.trim())
@@ -27,21 +27,23 @@ const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
 
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin) return cb(null, true);              // allow server-to-server/health checks
+    if (!origin) return cb(null, true); // allow server-to-server/health checks
     if (allowedOrigins.includes(origin)) return cb(null, true);
     return cb(new Error('CORS not allowed'));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
 }));
 
-// Body parsers
+// Parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Static uploads (if any local uploads; Cloudinary preferred in prod)
+// Static (if any local uploads; Cloudinary preferred in prod)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Routes
+// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/expenses', expenseRoutes);
@@ -51,7 +53,7 @@ app.use('/api/policies', policyRoutes);
 app.use('/api/approvals', approvalRoutes);
 app.use('/api/password', passwordRoutes);
 
-// Health routes for Render monitoring
+// Health
 app.get('/health', (_req, res) => res.send('ok'));
 app.get('/', (_req, res) => {
   res.json({
