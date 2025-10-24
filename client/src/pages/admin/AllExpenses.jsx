@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { expenseAPI, categoryAPI } from '../../services/api';
-import { Eye, CheckCircle, XCircle, DollarSign } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, DollarSign, Upload, Filter } from 'lucide-react';
+
 
 const AllExpenses = () => {
   const [expenses, setExpenses] = useState([]);
@@ -13,16 +14,17 @@ const AllExpenses = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Payment form state
   const [paymentData, setPaymentData] = useState({
     paymentMethod: '',
     paymentReference: '',
-    paymentProof: null
+    paymentProof: null,
   });
   const [paymentProofPreview, setPaymentProofPreview] = useState(null);
 
   useEffect(() => {
     fetchExpenses();
-    fetchCategories();
+
   }, []);
 
   const fetchExpenses = async () => {
@@ -40,8 +42,8 @@ const AllExpenses = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await categoryAPI.getAll?.() || await categoryAPI.getCategories?.();
-      setCategories(response?.data?.categories || response?.data || []);
+      const response = await categoryAPI.getCategories();
+      setCategories(response.data || []);
     } catch (err) {
       console.error('Error fetching categories:', err);
     }
@@ -49,14 +51,15 @@ const AllExpenses = () => {
 
   const handleApprove = async (expenseId) => {
     if (!window.confirm('Are you sure you want to approve this expense?')) return;
+
     setActionLoading(true);
     try {
       await expenseAPI.approve(expenseId, { comments: 'Approved by admin' });
       alert('✅ Expense approved successfully!');
-      await fetchExpenses();
+      fetchExpenses();
       setShowModal(false);
     } catch (err) {
-      alert('❌ Failed to approve expense: ' + (err.response?.data?.message || err.message));
+      alert('❌ Failed to approve expense');
     } finally {
       setActionLoading(false);
     }
@@ -65,65 +68,90 @@ const AllExpenses = () => {
   const handleReject = async (expenseId) => {
     const reason = prompt('Enter rejection reason:');
     if (!reason) return;
+
     setActionLoading(true);
     try {
       await expenseAPI.reject(expenseId, { reason });
       alert('❌ Expense rejected');
-      await fetchExpenses();
+      fetchExpenses();
       setShowModal(false);
     } catch (err) {
-      alert('Failed to reject expense: ' + (err.response?.data?.message || err.message));
+      alert('Failed to reject expense');
     } finally {
       setActionLoading(false);
     }
   };
 
   const handlePaymentProofChange = (e) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files[0];
     if (file) {
-      setPaymentData(prev => ({ ...prev, paymentProof: file }));
+      setPaymentData({ ...paymentData, paymentProof: file });
+
       const reader = new FileReader();
-      reader.onloadend = () => setPaymentProofPreview(reader.result);
+      reader.onloadend = () => {
+        setPaymentProofPreview(reader.result);
+      };
       reader.readAsDataURL(file);
     }
   };
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
+
     if (!paymentData.paymentMethod) {
-      alert('Please select payment method');
+      alert('Please enter payment method');
       return;
     }
+
     setActionLoading(true);
     try {
-      const form = new FormData();
-      form.append('paymentMethod', paymentData.paymentMethod);
-      form.append('paymentReference', paymentData.paymentReference || '');
-      if (paymentData.paymentProof) form.append('paymentProof', paymentData.paymentProof);
+      const response = await fetch(`http://localhost:5000/api/expenses/${selectedExpense._id}/payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          paymentMethod: paymentData.paymentMethod,
+          paymentReference: paymentData.paymentReference
+        })
+      });
 
-      await expenseAPI.processPayment(selectedExpense._id, form);
+      if (!response.ok) {
+        throw new Error('Payment failed');
+      }
 
       alert('✅ Payment processed successfully!');
-      setPaymentData({ paymentMethod: '', paymentReference: '', paymentProof: null });
+
+      setPaymentData({
+        paymentMethod: '',
+        paymentReference: '',
+        paymentProof: null,
+      });
       setPaymentProofPreview(null);
-      await fetchExpenses();
+
+      fetchExpenses();
       setShowPaymentModal(false);
       setShowModal(false);
     } catch (err) {
       console.error('Payment error:', err);
-      alert('❌ Failed to process payment: ' + (err.response?.data?.message || err.message));
+      alert('❌ Failed to process payment: ' + err.message);
     } finally {
       setActionLoading(false);
     }
   };
 
-  const filteredExpenses = expenses.filter((expense) => {
+  // FILTER EXPENSES BY STATUS AND CATEGORY
+  const filteredExpenses = expenses.filter(expense => {
     const matchesStatus = statusFilter === 'all' || expense.status === statusFilter;
     const matchesCategory = categoryFilter === 'all' || expense.category?._id === categoryFilter;
     return matchesStatus && matchesCategory;
   });
 
-  const getStatusCount = (status) => expenses.filter((exp) => exp.status === status).length;
+  // COUNT EXPENSES BY STATUS
+  const getStatusCount = (status) => {
+    return expenses.filter(exp => exp.status === status).length;
+  };
 
   const getStatusBadge = (status) => {
     const styles = {
@@ -132,9 +160,10 @@ const AllExpenses = () => {
       rejected: 'bg-red-100 text-red-800',
       paid: 'bg-blue-100 text-blue-800',
     };
+
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
-        {String(status || '').toUpperCase()}
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[status]}`}>
+        {status.toUpperCase()}
       </span>
     );
   };
@@ -146,9 +175,10 @@ const AllExpenses = () => {
         <p className="text-gray-600">Review and approve employee expenses</p>
       </div>
 
-      {/* Filters */}
+      {/* Filters Section */}
       <div className="bg-white rounded-lg shadow-md mb-6 p-4">
         <div className="flex flex-col lg:flex-row gap-4">
+          {/* Status Filter */}
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
             <div className="flex flex-wrap gap-2">
@@ -157,18 +187,20 @@ const AllExpenses = () => {
                 { value: 'pending', label: 'Pending', count: getStatusCount('pending') },
                 { value: 'approved', label: 'Approved', count: getStatusCount('approved') },
                 { value: 'rejected', label: 'Rejected', count: getStatusCount('rejected') },
-                { value: 'paid', label: 'Paid', count: getStatusCount('paid') },
+                { value: 'paid', label: 'Paid', count: getStatusCount('paid') }
               ].map((status) => (
                 <button
                   key={status.value}
                   onClick={() => setStatusFilter(status.value)}
-                  className={`px-4 py-2 rounded-lg font-medium transition ${
-                    statusFilter === status.value ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`px-4 py-2 rounded-lg font-medium transition ${statusFilter === status.value
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                 >
                   {status.label}
                   {status.count > 0 && (
-                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${statusFilter === status.value ? 'bg-blue-700' : 'bg-gray-300'}`}>
+                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${statusFilter === status.value ? 'bg-blue-700' : 'bg-gray-300'
+                      }`}>
                       {status.count}
                     </span>
                   )}
@@ -176,8 +208,11 @@ const AllExpenses = () => {
               ))}
             </div>
           </div>
+
+
         </div>
 
+        {/* Active Filters Display */}
         {(statusFilter !== 'all' || categoryFilter !== 'all') && (
           <div className="mt-4 flex items-center gap-2 flex-wrap">
             <span className="text-sm text-gray-600">Active Filters:</span>
@@ -189,7 +224,7 @@ const AllExpenses = () => {
             )}
             {categoryFilter !== 'all' && (
               <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center gap-2">
-                Category: {categories.find((c) => c._id === categoryFilter)?.name}
+                Category: {categories.find(c => c._id === categoryFilter)?.name}
                 <button onClick={() => setCategoryFilter('all')} className="hover:text-green-900">×</button>
               </span>
             )}
@@ -206,13 +241,12 @@ const AllExpenses = () => {
         )}
       </div>
 
-      {/* Results count */}
+      {/* Results Count */}
       <div className="mb-4 text-sm text-gray-600">
-        Showing <span className="font-semibold">{filteredExpenses.length}</span> of{' '}
-        <span className="font-semibold">{expenses.length}</span> expenses
+        Showing <span className="font-semibold">{filteredExpenses.length}</span> of <span className="font-semibold">{expenses.length}</span> expenses
       </div>
 
-      {/* Table */}
+      {/* Expenses Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -260,7 +294,7 @@ const AllExpenses = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">{expense.category?.name}</td>
                     <td className="px-6 py-4 text-sm">{expense.vendor}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
-                      ₹{Number(expense.amount).toLocaleString('en-IN')}
+                      ₹{expense.amount.toLocaleString('en-IN')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(expense.status)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -282,84 +316,178 @@ const AllExpenses = () => {
         )}
       </div>
 
-      {/* Expense Detail Modal with sticky footer */}
+      {/* Expense Detail Modal */}
       {showModal && selectedExpense && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-800">Expense Details</h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto">
-              {/* your existing details content unchanged */}
-              {/* keep receipt, payment details, rejection block */}
-            </div>
-
-            <div className="p-6 border-t flex gap-3">
-              {selectedExpense.status === 'pending' && (
-                <>
-                  <button
-                    onClick={() => handleApprove(selectedExpense._id)}
-                    disabled={actionLoading}
-                    className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle className="w-5 h-5" />
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => handleReject(selectedExpense._id)}
-                    disabled={actionLoading}
-                    className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    <XCircle className="w-5 h-5" />
-                    Reject
-                  </button>
-                </>
-              )}
-              {selectedExpense.status === 'approved' && (
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">Expense Details</h2>
                 <button
-                  onClick={() => setShowPaymentModal(true)}
-                  disabled={actionLoading}
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
                 >
-                  <DollarSign className="w-5 h-5" />
-                  Process Payment
+                  ×
                 </button>
-              )}
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-              >
-                Close
-              </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Employee</p>
+                    <p className="font-semibold text-gray-900">{selectedExpense.employeeId?.name}</p>
+                    <p className="text-xs text-gray-500">{selectedExpense.employeeId?.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Status</p>
+                    <div className="mt-1">{getStatusBadge(selectedExpense.status)}</div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Amount</p>
+                    <p className="font-semibold text-gray-900 text-lg">
+                      ₹{selectedExpense.amount.toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Category</p>
+                    <p className="font-semibold text-gray-900">{selectedExpense.category?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Date</p>
+                    <p className="font-semibold text-gray-900">
+                      {new Date(selectedExpense.date).toLocaleDateString('en-IN')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Vendor</p>
+                    <p className="font-semibold text-gray-900">{selectedExpense.vendor}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Description</p>
+                  <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedExpense.description}</p>
+                </div>
+
+                {selectedExpense.receipt && (
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">Expense Receipt</p>
+                    <img
+                      src={
+                        selectedExpense.receipt.startsWith('http')
+                          ? selectedExpense.receipt
+                          : `http://localhost:5000/uploads/${selectedExpense.receipt.replace(/^uploads\//, '')}`
+                      }
+                      alt="Receipt"
+                      className="max-w-full rounded-lg border shadow-md"
+                      onError={(e) => {
+                        console.error('❌ Image failed to load:', e.target.src);
+                        e.target.style.display = 'none';
+                        e.target.nextElementSibling.style.display = 'block';
+                      }}
+                    />
+                    <div
+                      className="hidden bg-gray-100 p-4 rounded-lg text-center"
+                      style={{ display: 'none' }}
+                    >
+                      <p className="text-gray-500">Receipt Not Available</p>
+                      <p className="text-xs text-gray-400 mt-2">Path: {selectedExpense.receipt}</p>
+                    </div>
+                  </div>
+                )}
+
+
+                {selectedExpense.status === 'paid' && (
+                  <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                    <p className="text-sm font-semibold text-blue-800 mb-2">Payment Details:</p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-blue-700">Payment Method:</span>
+                        <span className="font-semibold text-blue-900">{selectedExpense.paymentMethod}</span>
+                      </div>
+                      {selectedExpense.paymentReference && (
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">Transaction ID:</span>
+                          <span className="font-mono text-blue-900">{selectedExpense.paymentReference}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-blue-700">Paid On:</span>
+                        <span className="font-semibold text-blue-900">
+                          {new Date(selectedExpense.paidAt).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedExpense.rejectedBy && (
+                  <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                    <p className="text-sm font-semibold text-red-800 mb-1">Rejection Reason:</p>
+                    <p className="text-red-700">{selectedExpense.rejectedBy.reason}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-6 flex gap-3">
+                {selectedExpense.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => handleApprove(selectedExpense._id)}
+                      disabled={actionLoading}
+                      className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle className="w-5 h-5" />
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleReject(selectedExpense._id)}
+                      disabled={actionLoading}
+                      className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      <XCircle className="w-5 h-5" />
+                      Reject
+                    </button>
+                  </>
+                )}
+                {selectedExpense.status === 'approved' && (
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    disabled={actionLoading}
+                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    <DollarSign className="w-5 h-5" />
+                    Process Payment
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Payment Modal */}
+      {/* Payment Processing Modal */}
       {showPaymentModal && selectedExpense && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-lg max-w-md w-full">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Process Payment</h2>
               <p className="text-gray-600 mb-6">
-                Processing payment of{' '}
-                <span className="font-bold text-blue-600">
-                  ₹{Number(selectedExpense.amount).toLocaleString('en-IN')}
-                </span>{' '}
-                to {selectedExpense.employeeId?.name}
+                Processing payment of <span className="font-bold text-blue-600">₹{selectedExpense.amount.toLocaleString('en-IN')}</span> to {selectedExpense.employeeId?.name}
               </p>
 
               <form onSubmit={handlePaymentSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Method *
+                  </label>
                   <select
                     value={paymentData.paymentMethod}
                     onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
@@ -377,7 +505,9 @@ const AllExpenses = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Transaction ID / Reference Number</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Transaction ID / Reference Number
+                  </label>
                   <input
                     type="text"
                     value={paymentData.paymentReference}
@@ -385,14 +515,6 @@ const AllExpenses = () => {
                     placeholder="e.g., TXN123456789"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Proof (optional)</label>
-                  <input type="file" accept="image/*,application/pdf" onChange={handlePaymentProofChange} className="w-full" />
-                  {paymentProofPreview && (
-                    <img src={paymentProofPreview} alt="Proof preview" className="mt-2 max-h-32 rounded border" />
-                  )}
                 </div>
 
                 <div className="flex gap-3 mt-6">
@@ -407,7 +529,11 @@ const AllExpenses = () => {
                     type="button"
                     onClick={() => {
                       setShowPaymentModal(false);
-                      setPaymentData({ paymentMethod: '', paymentReference: '', paymentProof: null });
+                      setPaymentData({
+                        paymentMethod: '',
+                        paymentReference: '',
+                        paymentProof: null,
+                      });
                       setPaymentProofPreview(null);
                     }}
                     className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
@@ -420,7 +546,6 @@ const AllExpenses = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };
