@@ -16,7 +16,7 @@ const Tickets = () => {
   const fetchTickets = async () => {
     try {
       const response = await ticketAPI.getAllTickets();
-      setTickets(response.data.tickets);
+      setTickets(response.data.tickets || response.data || []);
     } catch (err) {
       console.error('Error:', err);
     } finally {
@@ -32,7 +32,6 @@ const Tickets = () => {
 
   const handleReply = async () => {
     if (!replyMessage.trim()) return;
-
     try {
       await ticketAPI.addReply(selectedTicket._id, { message: replyMessage });
       alert('✅ Reply sent!');
@@ -63,8 +62,8 @@ const Tickets = () => {
       closed: 'bg-gray-100 text-gray-800',
     };
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[status]}`}>
-        {status.toUpperCase().replace('_', ' ')}
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
+        {String(status || '').toUpperCase().replace('_', ' ')}
       </span>
     );
   };
@@ -77,8 +76,8 @@ const Tickets = () => {
       other: 'bg-gray-100 text-gray-800',
     };
     return (
-      <span className={`px-2 py-1 rounded text-xs font-medium ${styles[category]}`}>
-        {category.replace('_', ' ').toUpperCase()}
+      <span className={`px-2 py-1 rounded text-xs font-medium ${styles[category] || 'bg-gray-100 text-gray-800'}`}>
+        {String(category || '').replace('_', ' ').toUpperCase()}
       </span>
     );
   };
@@ -132,185 +131,189 @@ const Tickets = () => {
             <p className="text-gray-500">No tickets yet</p>
           </div>
         ) : (
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expense ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {tickets.map((ticket) => (
-                <tr key={ticket._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-mono text-blue-600 font-semibold">
-                    {ticket.ticketId}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <User className="w-4 h-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900">{ticket.employeeId?.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{ticket.subject}</td>
-                  <td className="px-6 py-4">
-                    {ticket.expenseId ? (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-blue-100 text-blue-800">
-                        <FileText className="w-3 h-3 mr-1" />
-                        {ticket.expenseId}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">N/A</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">{getCategoryBadge(ticket.category)}</td>
-                  <td className="px-6 py-4">{getStatusBadge(ticket.status)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(ticket.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleViewTicket(ticket)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      View & Reply
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expense ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {tickets.map((ticket) => (
+                  <tr key={ticket._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-mono text-blue-600 font-semibold">{ticket.ticketId}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <User className="w-4 h-4 text-gray-400 mr-2" />
+                        <span className="text-sm text-gray-900">{ticket.employeeId?.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{ticket.subject}</td>
+                    <td className="px-6 py-4">
+                      {ticket.expenseId ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-blue-100 text-blue-800">
+                          <FileText className="w-3 h-3 mr-1" />
+                          {ticket.expenseId}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">N/A</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">{getCategoryBadge(ticket.category)}</td>
+                    <td className="px-6 py-4">{getStatusBadge(ticket.status)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {new Date(ticket.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleViewTicket(ticket)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        View & Reply
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {/* Ticket Detail Modal */}
       {showModal && selectedTicket && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
+          <div className="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
                 Ticket {selectedTicket.ticketId}
               </h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">
                 ✕
               </button>
             </div>
 
-            {/* Ticket Info */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Employee</p>
-                  <p className="font-semibold">{selectedTicket.employeeId?.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Category</p>
-                  <p className="font-semibold">{selectedTicket.category.replace('_', ' ')}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Status</p>
-                  {getStatusBadge(selectedTicket.status)}
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Related Expense</p>
-                  {selectedTicket.expenseId ? (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-blue-100 text-blue-800">
-                      <FileText className="w-3 h-3 mr-1" />
-                      {selectedTicket.expenseId}
-                    </span>
-                  ) : (
-                    <span className="text-gray-400 text-sm">N/A</span>
-                  )}
+            {/* Content grid: left info (sticky on scroll), right scrollable thread */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
+              {/* Left info column */}
+              <div className="lg:col-span-1 p-6 border-b lg:border-b-0 lg:border-r min-w-0">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Employee</p>
+                    <p className="font-semibold break-words">{selectedTicket.employeeId?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Category</p>
+                    <p className="font-semibold break-words">
+                      {String(selectedTicket.category || '').replace('_', ' ')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Status</p>
+                    <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Related Expense</p>
+                    {selectedTicket.expenseId ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-blue-100 text-blue-800 break-all">
+                        <FileText className="w-3 h-3 mr-1" />
+                        {selectedTicket.expenseId}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-sm">N/A</span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Subject */}
-            <div className="mb-4">
-              <h3 className="font-semibold text-gray-800 mb-2">Subject</h3>
-              <p className="text-gray-700">{selectedTicket.subject}</p>
-            </div>
+              {/* Right thread and actions (scrollable) */}
+              <div className="lg:col-span-2 p-6 overflow-y-auto max-h-[70vh]">
+                {/* Subject */}
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">Subject</h3>
+                  <p className="text-gray-700 break-words">{selectedTicket.subject}</p>
+                </div>
 
-            {/* Description */}
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-800 mb-2">Description</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{selectedTicket.description}</p>
-            </div>
+                {/* Description */}
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-2">Description</h3>
+                  <p className="text-gray-700 whitespace-pre-wrap break-words">{selectedTicket.description}</p>
+                </div>
 
-            {/* Replies */}
-            {selectedTicket.replies && selectedTicket.replies.length > 0 && (
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-3">
-                  Replies ({selectedTicket.replies.length})
-                </h3>
-                <div className="space-y-3">
-                  {selectedTicket.replies.map((reply, idx) => (
-                    <div key={idx} className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-semibold text-gray-800">
-                          {reply.userId?.name || 'Admin'} 
-                          <span className="ml-2 text-xs font-normal text-blue-600">
-                            ({reply.userId?.role || 'Admin'})
-                          </span>
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(reply.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                      <p className="text-gray-700">{reply.message}</p>
+                {/* Replies */}
+                {selectedTicket.replies && selectedTicket.replies.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-gray-800 mb-3">
+                      Replies ({selectedTicket.replies.length})
+                    </h3>
+                    <div className="space-y-3">
+                      {selectedTicket.replies.map((reply, idx) => (
+                        <div key={idx} className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-semibold text-gray-800 break-words">
+                              {reply.userId?.name || 'Admin'}
+                              <span className="ml-2 text-xs font-normal text-blue-600">
+                                ({reply.userId?.role || 'Admin'})
+                              </span>
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(reply.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                          <p className="text-gray-700 break-words">{reply.message}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                )}
+
+                {/* Reply Box */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Add Reply</label>
+                  <textarea
+                    value={replyMessage}
+                    onChange={(e) => setReplyMessage(e.target.value)}
+                    rows="3"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Type your response..."
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={handleReply}
+                    disabled={!replyMessage.trim()}
+                    className="sm:flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Send Reply
+                  </button>
+
+                  {selectedTicket.status !== 'resolved' && (
+                    <button
+                      onClick={() => handleStatusChange(selectedTicket._id, 'resolved')}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                      Mark Resolved
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
-            )}
-
-            {/* Reply Box */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Add Reply
-              </label>
-              <textarea
-                value={replyMessage}
-                onChange={(e) => setReplyMessage(e.target.value)}
-                rows="3"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Type your response..."
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <button
-                onClick={handleReply}
-                disabled={!replyMessage.trim()}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Send Reply
-              </button>
-              
-              {selectedTicket.status !== 'resolved' && (
-                <button
-                  onClick={() => handleStatusChange(selectedTicket._id, 'resolved')}
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  Mark Resolved
-                </button>
-              )}
-              
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>

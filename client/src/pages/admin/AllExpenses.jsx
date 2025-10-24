@@ -13,7 +13,6 @@ const AllExpenses = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Payment form state
   const [paymentData, setPaymentData] = useState({
     paymentMethod: '',
     paymentReference: '',
@@ -39,7 +38,7 @@ const AllExpenses = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await categoryAPI.getAll(); // unified getAll
+      const response = await categoryAPI.getAll();
       setCategories(response.data?.categories || response.data || []);
     } catch (err) {
       console.error('Error fetching categories:', err);
@@ -103,7 +102,6 @@ const AllExpenses = () => {
     }
   };
 
-  // Filters
   const filteredExpenses = expenses.filter((expense) => {
     const matchesStatus = statusFilter === 'all' || expense.status === statusFilter;
     const matchesCategory = categoryFilter === 'all' || expense.category?._id === categoryFilter;
@@ -133,10 +131,9 @@ const AllExpenses = () => {
         <p className="text-gray-600">Review and approve employee expenses</p>
       </div>
 
-      {/* Filters Section */}
+      {/* Filters */}
       <div className="bg-white rounded-lg shadow-md mb-6 p-4">
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* Status Filter */}
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
             <div className="flex flex-wrap gap-2">
@@ -156,7 +153,11 @@ const AllExpenses = () => {
                 >
                   {status.label}
                   {status.count > 0 && (
-                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${statusFilter === status.value ? 'bg-blue-700' : 'bg-gray-300'}`}>
+                    <span
+                      className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                        statusFilter === status.value ? 'bg-blue-700 text-white' : 'bg-gray-300 text-gray-800'
+                      }`}
+                    >
                       {status.count}
                     </span>
                   )}
@@ -164,22 +165,47 @@ const AllExpenses = () => {
               ))}
             </div>
           </div>
+
+          {/* Category Filter */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Category</label>
+            <div className="relative">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="block w-full min-w-0 px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none text-sm"
+              >
+                <option value="all">All</option>
+                {categories.map((cat) => (
+                  <option key={cat._id} value={cat._id} className="whitespace-normal">
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
+                ▾
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Active Filters Display */}
         {(statusFilter !== 'all' || categoryFilter !== 'all') && (
           <div className="mt-4 flex items-center gap-2 flex-wrap">
             <span className="text-sm text-gray-600">Active Filters:</span>
             {statusFilter !== 'all' && (
               <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-2">
                 Status: {statusFilter}
-                <button onClick={() => setStatusFilter('all')} className="hover:text-blue-900">×</button>
+                <button onClick={() => setStatusFilter('all')} className="hover:text-blue-900">
+                  ×
+                </button>
               </span>
             )}
             {categoryFilter !== 'all' && (
               <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center gap-2">
                 Category: {categories.find((c) => c._id === categoryFilter)?.name}
-                <button onClick={() => setCategoryFilter('all')} className="hover:text-green-900">×</button>
+                <button onClick={() => setCategoryFilter('all')} className="hover:text-green-900">
+                  ×
+                </button>
               </span>
             )}
             <button
@@ -201,7 +227,7 @@ const AllExpenses = () => {
         <span className="font-semibold">{expenses.length}</span> expenses
       </div>
 
-      {/* Expenses Table */}
+      {/* Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -258,8 +284,9 @@ const AllExpenses = () => {
                           setSelectedExpense(expense);
                           setShowModal(true);
                         }}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
                       >
+                        <Eye className="w-4 h-4" />
                         View Details
                       </button>
                     </td>
@@ -278,10 +305,7 @@ const AllExpenses = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">Expense Details</h2>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
-                >
+                <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700 text-2xl">
                   ×
                 </button>
               </div>
@@ -375,7 +399,6 @@ const AllExpenses = () => {
                 )}
               </div>
 
-              {/* Action Buttons */}
               <div className="mt-6 flex gap-3">
                 {selectedExpense.status === 'pending' && (
                   <>
@@ -385,7 +408,7 @@ const AllExpenses = () => {
                       className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       <CheckCircle className="w-5 h-5" />
-                      Approve
+                      {actionLoading ? 'Approving...' : 'Approve'}
                     </button>
                     <button
                       onClick={() => handleReject(selectedExpense._id)}
@@ -393,7 +416,7 @@ const AllExpenses = () => {
                       className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       <XCircle className="w-5 h-5" />
-                      Reject
+                      {actionLoading ? 'Rejecting...' : 'Reject'}
                     </button>
                   </>
                 )}
@@ -419,7 +442,7 @@ const AllExpenses = () => {
         </div>
       )}
 
-      {/* Payment Processing Modal */}
+      {/* Payment Modal */}
       {showPaymentModal && selectedExpense && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-lg max-w-md w-full">
@@ -440,7 +463,7 @@ const AllExpenses = () => {
                     value={paymentData.paymentMethod}
                     onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full min-w-0 px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none"
                   >
                     <option value="">Select method</option>
                     <option value="Bank Transfer">Bank Transfer</option>
