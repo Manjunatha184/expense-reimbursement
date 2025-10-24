@@ -1,0 +1,90 @@
+### 1. Login as Admin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "123456"
+}
+
+### COPY THE TOKEN FROM ABOVE RESPONSE ###
+### Replace "YOUR_TOKEN" below with actual token (without quotes) ###
+
+### 2. Create Travel Category
+POST http://localhost:5000/api/categories
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGU0ZWNkOTdjMzM0ZjE4NGE2N2NmMGQiLCJpYXQiOjE3NTk4MzQzMjIsImV4cCI6MTc2MDQzOTEyMn0.eN2bcgN2Ji-uglxKDmDjklWG7Ks-yiMVxvH4vCjnyR4
+
+{
+  "name": "Travel",
+  "description": "Travel and transportation expenses",
+  "budgetLimit": 50000,
+  "requireReceipt": true,
+  "perDayLimit": 3000,
+  "approvalThreshold": 5000
+}
+
+### 3. Create Meals Category
+POST http://localhost:5000/api/categories
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGU0ZWNkOTdjMzM0ZjE4NGE2N2NmMGQiLCJpYXQiOjE3NTk4MzQzMjIsImV4cCI6MTc2MDQzOTEyMn0.eN2bcgN2Ji-uglxKDmDjklWG7Ks-yiMVxvH4vCjnyR4
+
+{
+  "name": "Meals",
+  "description": "Food and beverage expenses",
+  "budgetLimit": 20000,
+  "requireReceipt": true,
+  "perDayLimit": 1000,
+  "approvalThreshold": 2000
+}
+
+### 4. Create Accommodation Category
+POST http://localhost:5000/api/categories
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGU0ZWNkOTdjMzM0ZjE4NGE2N2NmMGQiLCJpYXQiOjE3NTk4MzQzMjIsImV4cCI6MTc2MDQzOTEyMn0.eN2bcgN2Ji-uglxKDmDjklWG7Ks-yiMVxvH4vCjnyR4
+
+{
+  "name": "Accommodation",
+  "description": "Hotel and lodging expenses",
+  "budgetLimit": 30000,
+  "requireReceipt": true,
+  "perDayLimit": 5000,
+  "approvalThreshold": 10000
+}
+
+### 5. Create Office Supplies Category
+POST http://localhost:5000/api/categories
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGU0ZWNkOTdjMzM0ZjE4NGE2N2NmMGQiLCJpYXQiOjE3NTk4MzQzMjIsImV4cCI6MTc2MDQzOTEyMn0.eN2bcgN2Ji-uglxKDmDjklWG7Ks-yiMVxvH4vCjnyR4
+
+{
+  "name": "Office Supplies",
+  "description": "Stationery and office equipment",
+  "budgetLimit": 15000,
+  "requireReceipt": false,
+  "perDayLimit": 2000,
+  "approvalThreshold": 3000
+}
+
+### 6. Get All Categories
+GET http://localhost:5000/api/categories
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGU0ZWNkOTdjMzM0ZjE4NGE2N2NmMGQiLCJpYXQiOjE3NTk4MzQzMjIsImV4cCI6MTc2MDQzOTEyMn0.eN2bcgN2Ji-uglxKDmDjklWG7Ks-yiMVxvH4vCjnyR4
+
+### 7. Login as Employee
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@test.com",
+  "password": "123456"
+}
+
+### COPY JOHN'S TOKEN FROM ABOVE AND USE IN REQUESTS BELOW ###
+
+### 8. Get My Expenses (Employee)
+GET http://localhost:5000/api/expenses/my-expenses
+Authorization: Bearer PASTE_JOHN_TOKEN_HERE
+
+### 9. Get Expense Stats (Employee)
+GET http://localhost:5000/api/expenses/stats
+Authorization: Bearer PASTE_JOHN_TOKEN_HERE
