@@ -36,7 +36,7 @@ const Tickets = () => {
       await ticketAPI.addReply(selectedTicket._id, { message: replyMessage });
       alert('✅ Reply sent!');
       setReplyMessage('');
-      await fetchTickets();
+      fetchTickets();
       setShowModal(false);
     } catch (err) {
       alert('❌ Failed to send reply');
@@ -47,7 +47,7 @@ const Tickets = () => {
     try {
       await ticketAPI.updateStatus(ticketId, { status: newStatus });
       alert(`✅ Ticket status updated to ${newStatus}`);
-      await fetchTickets();
+      fetchTickets();
       setShowModal(false);
     } catch (err) {
       alert('❌ Failed to update status');
@@ -123,7 +123,7 @@ const Tickets = () => {
         </div>
       </div>
 
-      {/* Tickets table with horizontal scroll */}
+      {/* Tickets Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {tickets.length === 0 ? (
           <div className="text-center py-12">
@@ -158,7 +158,7 @@ const Tickets = () => {
                     <td className="px-6 py-4 text-sm text-gray-900">{ticket.subject}</td>
                     <td className="px-6 py-4">
                       {ticket.expenseId ? (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-blue-100 text-blue-800 break-all">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-blue-100 text-blue-800">
                           <FileText className="w-3 h-3 mr-1" />
                           {ticket.expenseId}
                         </span>
@@ -187,22 +187,24 @@ const Tickets = () => {
         )}
       </div>
 
-      {/* Ticket Detail Modal with sticky footer and independent scroll */}
+      {/* Ticket Detail Modal */}
       {showModal && selectedTicket && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-hidden">
             {/* Header */}
             <div className="px-6 py-4 border-b flex items-center justify-between">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
                 Ticket {selectedTicket.ticketId}
               </h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">
+                ✕
+              </button>
             </div>
 
-            {/* Scrollable content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 flex-1 overflow-hidden">
-              {/* Left info */}
-              <div className="lg:col-span-1 p-6 border-b lg:border-b-0 lg:border-r overflow-y-auto">
+            {/* Content grid: left info (sticky on scroll), right scrollable thread */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
+              {/* Left info column */}
+              <div className="lg:col-span-1 p-6 border-b lg:border-b-0 lg:border-r min-w-0">
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm text-gray-600">Employee</p>
@@ -232,17 +234,22 @@ const Tickets = () => {
                 </div>
               </div>
 
-              {/* Right thread */}
-              <div className="lg:col-span-2 p-6 overflow-y-auto">
+              {/* Right thread and actions (scrollable) */}
+              <div className="lg:col-span-2 p-6 overflow-y-auto max-h-[70vh]">
+                {/* Subject */}
                 <div className="mb-4">
                   <h3 className="font-semibold text-gray-800 mb-2">Subject</h3>
                   <p className="text-gray-700 break-words">{selectedTicket.subject}</p>
                 </div>
+
+                {/* Description */}
                 <div className="mb-6">
                   <h3 className="font-semibold text-gray-800 mb-2">Description</h3>
                   <p className="text-gray-700 whitespace-pre-wrap break-words">{selectedTicket.description}</p>
                 </div>
-                {selectedTicket.replies?.length > 0 && (
+
+                {/* Replies */}
+                {selectedTicket.replies && selectedTicket.replies.length > 0 && (
                   <div className="mb-6">
                     <h3 className="font-semibold text-gray-800 mb-3">
                       Replies ({selectedTicket.replies.length})
@@ -267,6 +274,8 @@ const Tickets = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Reply Box */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Add Reply</label>
                   <textarea
@@ -277,33 +286,33 @@ const Tickets = () => {
                     placeholder="Type your response..."
                   />
                 </div>
-              </div>
-            </div>
 
-            {/* Sticky footer actions */}
-            <div className="px-6 py-4 border-t">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={handleReply}
-                  disabled={!replyMessage.trim()}
-                  className="sm:flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Send Reply
-                </button>
-                {selectedTicket.status !== 'resolved' && (
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
-                    onClick={() => handleStatusChange(selectedTicket._id, 'resolved')}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    onClick={handleReply}
+                    disabled={!replyMessage.trim()}
+                    className="sm:flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Mark Resolved
+                    Send Reply
                   </button>
-                )}
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                >
-                  Close
-                </button>
+
+                  {selectedTicket.status !== 'resolved' && (
+                    <button
+                      onClick={() => handleStatusChange(selectedTicket._id, 'resolved')}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                      Mark Resolved
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
