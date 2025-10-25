@@ -261,8 +261,7 @@ const SubmitExpense = () => {
               </select>
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">▾</span>
             </div>
-            <p className="mt-1 text-xs text-gray-500">Long names wrap; no horizontal scroll.</p>
-          </div>
+                      </div>
 
           {/* Amount */}
           <div>
@@ -333,13 +332,6 @@ const SubmitExpense = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={checkFullCompliance}
-              className="sm:flex-1 px-6 py-3 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition"
-            >
-              Check Compliance
-            </button>
             <button
               type="submit"
               disabled={loading}

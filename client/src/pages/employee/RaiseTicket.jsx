@@ -87,20 +87,18 @@ const RaiseTicket = () => {
               </select>
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">▾</span>
             </div>
-            <p className="mt-1 text-xs text-gray-500">Dropdown stays within screen on mobile.</p>
-          </div>
+           </div>
 
           {/* Related Expense ID */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Related Expense ID (Optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Related Expense ID</label>
             <input
               type="text"
               value={formData.expenseId}
               onChange={(e) => setFormData({ ...formData, expenseId: e.target.value })}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Leave blank or enter MongoDB ID (not EXP001)"
+              placeholder="Enter expense ID (EXP001)"
             />
-            <p className="text-xs text-gray-500 mt-1">Add only if linking to a specific expense.</p>
           </div>
 
           {/* Description */}
