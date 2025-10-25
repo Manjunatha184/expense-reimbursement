@@ -192,8 +192,8 @@ const AllExpenses = () => {
                   key={status.value}
                   onClick={() => setStatusFilter(status.value)}
                   className={`px-4 py-2 rounded-lg font-medium transition ${statusFilter === status.value
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                 >
                   {status.label}
@@ -370,11 +370,7 @@ const AllExpenses = () => {
                   <div>
                     <p className="text-sm text-gray-600 mb-2">Expense Receipt</p>
                     <img
-                      src={
-                        selectedExpense.receipt.startsWith('http')
-                          ? selectedExpense.receipt
-                          : `http://localhost:5000/uploads/${selectedExpense.receipt.replace(/^uploads\//, '')}`
-                      }
+                      src={selectedExpense.receipt}
                       alt="Receipt"
                       className="max-w-full rounded-lg border shadow-md"
                       onError={(e) => {
@@ -388,12 +384,10 @@ const AllExpenses = () => {
                       style={{ display: 'none' }}
                     >
                       <p className="text-gray-500">Receipt Not Available</p>
-                      <p className="text-xs text-gray-400 mt-2">Path: {selectedExpense.receipt}</p>
+                      <p className="text-xs text-gray-400 mt-2">URL: {selectedExpense.receipt}</p>
                     </div>
                   </div>
                 )}
-
-
                 {selectedExpense.status === 'paid' && (
                   <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                     <p className="text-sm font-semibold text-blue-800 mb-2">Payment Details:</p>

@@ -9,11 +9,9 @@ exports.createExpense = async (req, res) => {
   try {
     const { category, amount, date, vendor, description } = req.body;
     
-    // Generate expense ID
     const count = await Expense.countDocuments();
     const expenseId = `EXP${String(count + 1).padStart(4, '0')}`;
 
-    // Create expense with pending status
     const expense = new Expense({
       expenseId,
       employeeId: req.user._id,
@@ -22,14 +20,14 @@ exports.createExpense = async (req, res) => {
       date,
       vendor,
       description,
-      receipt: req.file?.filename,
-      status: 'pending' // Always pending, no auto-approval
+      receipt: req.file?.path, // Cloudinary URL (not filename)
+      status: 'pending'
     });
 
     await expense.save();
     await expense.populate('category employeeId', 'name email');
 
-    // Send email notification to admin
+    // Email notification code...
     try {
       const admin = await User.findOne({ role: 'admin' });
       if (admin && admin.email) {
