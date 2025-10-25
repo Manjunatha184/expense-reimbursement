@@ -4,7 +4,6 @@ const User = require('../models/User');
 const emailService = require('../services/emailService');
 const approvalController = require('./approvalController');
 
-
 // CREATE EXPENSE - Send email to admin
 exports.createExpense = async (req, res) => {
   try {
@@ -55,7 +54,6 @@ exports.createExpense = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // GET MY EXPENSES
 exports.getMyExpenses = async (req, res) => {
@@ -184,7 +182,16 @@ exports.rejectExpense = async (req, res) => {
 // PROCESS PAYMENT - Send email to employee
 exports.processPayment = async (req, res) => {
   try {
-    const expense = await Expense.findById(req.params.id)
+    const { id } = req.params;
+    const { paymentMethod, paymentReference } = req.body;
+
+    console.log('🔍 Payment request received:', {
+      expenseId: id,
+      paymentMethod,
+      paymentReference
+    });
+
+    const expense = await Expense.findById(id)
       .populate('employeeId', 'name email')
       .populate('category', 'name');
       
@@ -196,15 +203,21 @@ exports.processPayment = async (req, res) => {
       return res.status(400).json({ message: 'Only approved expenses can be paid' });
     }
     
+    // Update payment fields
     expense.status = 'paid';
+    expense.paymentMethod = paymentMethod || '';
+    expense.paymentReference = paymentReference || '';
     expense.paidAt = new Date();
-    expense.paymentMethod = req.body.paymentMethod;
-    expense.paymentReference = req.body.paymentReference;
     expense.paidBy = req.user._id;
     
     await expense.save();
 
-    console.log('🔍 DEBUG: Sending payment email to:', expense.employeeId.email);
+    console.log('✅ Payment saved:', {
+      expenseId: expense.expenseId,
+      method: expense.paymentMethod,
+      reference: expense.paymentReference,
+      paidAt: expense.paidAt
+    });
 
     // Send email to employee
     try {
@@ -212,22 +225,24 @@ exports.processPayment = async (req, res) => {
         expense,
         expense.employeeId.email
       );
-      console.log('📧 Payment email result:', result);
-      
-      if (result.success) {
-        console.log('✅ Payment notification sent to:', expense.employeeId.email);
+      if (result?.success) {
+        console.log('📧 Payment notification sent to:', expense.employeeId.email);
       }
     } catch (emailError) {
       console.error('❌ Payment email error:', emailError.message);
     }
 
     res.json({ 
-      message: 'Payment processed and employee notified', 
-      expense 
+      success: true,
+      message: 'Payment processed successfully', 
+      expense
     });
   } catch (error) {
-    console.error('Process payment error:', error);
-    res.status(500).json({ message: error.message });
+    console.error('❌ Process payment error:', error);
+    res.status(500).json({ 
+      message: 'Failed to process payment',
+      error: error.message 
+    });
   }
 };
 

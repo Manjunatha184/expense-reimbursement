@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { expenseAPI, categoryAPI } from '../../services/api';
 import { Eye, CheckCircle, XCircle, DollarSign, Upload, Filter } from 'lucide-react';
 
-
 const AllExpenses = () => {
   const [expenses, setExpenses] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -24,7 +23,6 @@ const AllExpenses = () => {
 
   useEffect(() => {
     fetchExpenses();
-
   }, []);
 
   const fetchExpenses = async () => {
@@ -51,12 +49,11 @@ const AllExpenses = () => {
 
   const handleApprove = async (expenseId) => {
     if (!window.confirm('Are you sure you want to approve this expense?')) return;
-
     setActionLoading(true);
     try {
       await expenseAPI.approve(expenseId, { comments: 'Approved by admin' });
       alert('✅ Expense approved successfully!');
-      fetchExpenses();
+      await fetchExpenses();
       setShowModal(false);
     } catch (err) {
       alert('❌ Failed to approve expense');
@@ -68,12 +65,11 @@ const AllExpenses = () => {
   const handleReject = async (expenseId) => {
     const reason = prompt('Enter rejection reason:');
     if (!reason) return;
-
     setActionLoading(true);
     try {
       await expenseAPI.reject(expenseId, { reason });
       alert('❌ Expense rejected');
-      fetchExpenses();
+      await fetchExpenses();
       setShowModal(false);
     } catch (err) {
       alert('Failed to reject expense');
@@ -86,7 +82,6 @@ const AllExpenses = () => {
     const file = e.target.files[0];
     if (file) {
       setPaymentData({ ...paymentData, paymentProof: file });
-
       const reader = new FileReader();
       reader.onloadend = () => {
         setPaymentProofPreview(reader.result);
@@ -99,30 +94,30 @@ const AllExpenses = () => {
     e.preventDefault();
 
     if (!paymentData.paymentMethod) {
-      alert('Please enter payment method');
+      alert('Please select payment method');
       return;
     }
 
     setActionLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/expenses/${selectedExpense._id}/payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          paymentMethod: paymentData.paymentMethod,
-          paymentReference: paymentData.paymentReference
-        })
-      });
+      const form = new FormData();
+      form.append('paymentMethod', paymentData.paymentMethod);
+      form.append('paymentReference', paymentData.paymentReference || '');
+      if (paymentData.paymentProof) {
+        form.append('paymentProof', paymentData.paymentProof);
+      }
 
-      if (!response.ok) {
-        throw new Error('Payment failed');
+      // Send payment request
+      const response = await expenseAPI.processPayment(selectedExpense._id, form);
+
+      // Update selectedExpense with the returned data so modal shows updated details
+      if (response.data && response.data.expense) {
+        setSelectedExpense(response.data.expense);
       }
 
       alert('✅ Payment processed successfully!');
 
+      // Reset form
       setPaymentData({
         paymentMethod: '',
         paymentReference: '',
@@ -130,16 +125,20 @@ const AllExpenses = () => {
       });
       setPaymentProofPreview(null);
 
-      fetchExpenses();
+      // Refresh expenses list
+      await fetchExpenses();
+
+      // Close payment modal but KEEP detail modal open to show payment details
       setShowPaymentModal(false);
-      setShowModal(false);
+
     } catch (err) {
       console.error('Payment error:', err);
-      alert('❌ Failed to process payment: ' + err.message);
+      alert('❌ Failed to process payment: ' + (err.response?.data?.message || err.message));
     } finally {
       setActionLoading(false);
     }
   };
+
 
   // FILTER EXPENSES BY STATUS AND CATEGORY
   const filteredExpenses = expenses.filter(expense => {
@@ -208,8 +207,6 @@ const AllExpenses = () => {
               ))}
             </div>
           </div>
-
-
         </div>
 
         {/* Active Filters Display */}
@@ -403,7 +400,9 @@ const AllExpenses = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-blue-700">Payment Method:</span>
-                        <span className="font-semibold text-blue-900">{selectedExpense.paymentMethod}</span>
+                        <span className="font-semibold text-blue-900">
+                          {selectedExpense.paymentMethod || '-'}
+                        </span>
                       </div>
                       {selectedExpense.paymentReference && (
                         <div className="flex justify-between">
@@ -414,7 +413,9 @@ const AllExpenses = () => {
                       <div className="flex justify-between">
                         <span className="text-blue-700">Paid On:</span>
                         <span className="font-semibold text-blue-900">
-                          {new Date(selectedExpense.paidAt).toLocaleString('en-IN')}
+                          {selectedExpense.paidAt
+                            ? new Date(selectedExpense.paidAt).toLocaleString('en-IN')
+                            : '-'}
                         </span>
                       </div>
                     </div>

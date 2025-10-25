@@ -14,7 +14,7 @@ router.get('/', auth, adminAuth, expenseController.getAllExpenses);
 router.get('/:id', auth, expenseController.getExpenseById);
 router.post('/:id/approve', auth, adminAuth, expenseController.approveExpense);
 router.post('/:id/reject', auth, adminAuth, expenseController.rejectExpense);
-router.post('/:id/payment', auth, adminAuth, expenseController.processPayment);
+router.post('/:id/payment', auth, adminAuth, upload.none(), expenseController.processPayment);
 router.post('/:id/comment', auth, expenseController.addComment);
 
 module.exports = router;
